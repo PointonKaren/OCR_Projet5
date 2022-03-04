@@ -7,7 +7,7 @@ let urlProduct = document.location.href;
 let url = new URL(urlProduct);
 let id = url.searchParams.get("id");
 
-let myCreateElement = (element_type, element_parent, attributes) => {
+let createElement = (element_type, element_parent, attributes) => {
   let element = document.createElement(element_type);
   for (let attribute of attributes) {
     element.setAttribute(attribute.name, attribute.value);
@@ -16,15 +16,19 @@ let myCreateElement = (element_type, element_parent, attributes) => {
   return element;
 };
 
-let myTextNode = (text, element_parent) => {
-  const textNode = document.createTextNode(text);
-  element_parent.appendChild(textNode);
+let addTextNode = (text, element_parent) => {
+  try {
+    element_parent.childNodes[0].nodeValue = text;
+  } catch (error) {
+    const textNode = document.createTextNode(text);
+    element_parent.appendChild(textNode);
+  }
 };
 
 // Création d'une fonction générique utilisable pour le catalogue et pour n'importe quel élément
 let addTextToId = (id_name, text) => {
   const idElement = document.getElementById(id_name);
-  myTextNode(text, idElement);
+  addTextNode(text, idElement);
 };
 
 // Fonction générique qui supprime les sauts de ligne, espaces et retours à la ligne dans un string
@@ -57,11 +61,11 @@ const detailProduct = () => {
       // Changer le title de la page par le nom du produit sélectionné
       document.title = product.name;
 
-      // Utilisation des fonctions génériques addTextToId et myCreateElement
+      // Utilisation des fonctions génériques addTextToId et createElement
 
       // Ajouter l'image du produit à la <div class="item__img"></div>
 
-      myCreateElement("img", classImg, [
+      createElement("img", classImg, [
         { name: "src", value: product.imageUrl },
         { name: "alt", value: product.altTxt + ", " + product.name },
         { name: "title", value: product.altTxt + ", " + product.name },
@@ -79,12 +83,12 @@ const detailProduct = () => {
       // Ajouter les options de couleurs dans <select name="color-select" id="colors"></select>
       const idColors = document.getElementById("colors");
       for (let color of product.colors) {
-        let option = myCreateElement(
+        let option = createElement(
           "option",
           idColors,
           (attributes = [{ name: "value", value: color }])
         );
-        myTextNode(color, option);
+        addTextNode(color, option);
       }
     })
     .catch(function (error) {
@@ -152,10 +156,10 @@ addToCart.addEventListener("click", () => {
   localStorage.setItem("storage", JSON.stringify(cartStorage));
 
   // Ajout d'un paragraphe qui confirme que le(s) produit(s) ont été ajoutés au panier après avoir cliqué sur le bouton "Ajouter au panier"
-  let addTextToButton = myCreateElement("p", item__content, [
+  let addTextToButton = createElement("p", item__content, [
     { name: "class", value: "addedToCart" },
   ]);
-  myTextNode("Produit(s) ajouté(s) au panier.", addTextToButton);
-  addTextToButton.style.fontSize = "1.8em";
+  addTextNode("Produit(s) ajouté(s) au panier.", addTextToButton);
+  addTextToButton.style.fontSize = "1.3em";
   addTextToButton.style.textAlign = "center";
 });
