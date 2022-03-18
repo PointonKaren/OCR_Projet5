@@ -79,7 +79,7 @@ const detailProduct = () => {
 
       // Ajouter la description dans <p id="description"></p>
       addTextToId("description", product.description);
-
+      
       // Ajouter les options de couleurs dans <select name="color-select" id="colors"></select>
       const idColors = document.getElementById("colors");
       for (let color of product.colors) {
@@ -87,18 +87,18 @@ const detailProduct = () => {
           "option",
           idColors,
           (attributes = [{ name: "value", value: color }])
-        );
-        addTextNode(color, option);
+          );
+          addTextNode(color, option);
       }
     })
     .catch(function (error) {
       console.log(error);
     });
 };
-
+  
 // Appel de la fonction detailProducts qui permet de générer une fiche produit dynamique :
 detailProduct();
-
+  
 // Interroge à chaque chargement de page si j'ai quelque chose dans mon stockage de session (= localStorage)
 // Si localStorage.length > 0 alors j'ai quelque chose dans mon localStorage, alors je l'ajoute dans ma variable "cartStorage"
 let cartStorage = [];
@@ -110,6 +110,12 @@ if (localStorage.length > 0) {
 }
 
 let item__content = document.querySelector(".item__content");
+
+// Ajout d'un h2 qui confirme que le(s) produit(s) ont été ajoutés au panier après avoir cliqué sur le bouton "Ajouter au panier"
+let h2Button = createElement("h2", item__content, []);
+let pButton = createElement("p", item__content, []);
+let totalQuantity = 0;
+
 // Stocker les données dans le localStorage au clic :
 addToCart.addEventListener("click", () => {
   // Récupérer les informations des canapés à stocker dans le localStorage :
@@ -118,48 +124,52 @@ addToCart.addEventListener("click", () => {
   const name = clearString(
     document.getElementById("title").textContent,
     /\n|\r/g
-  ).trim();
-  const price = clearString(
-    document.getElementById("price").textContent,
-    /\n| |\r/g // \n = retour en début de ligne | | <- espace entre ||= espace et \r = retour à la ligne
-  );
-  const image = classImg.getElementsByTagName("img")[0];
+    ).trim();
+    const price = clearString(
+      document.getElementById("price").textContent,
+      /\n| |\r/g // \n = retour en début de ligne | | <- espace entre ||= espace et \r = retour à la ligne
+      );
+      const image = classImg.getElementsByTagName("img")[0];
+      
+// itemToCart est le kanap sur la page produit qu'on va ajouter au panier.
+let itemToCart= {
+  id: id,
+  color: selectedColor,
+  quantity: selectedQuantity,
+};
+let itemData= {
+  name: name,
+  price: price,
+  imageSrc: image.src,
+  imageAlt: image.alt
+};
 
-  // itemToCart est le kanap sur la page produit qu'on va ajouter au panier.
-  let itemToCart = {
-    id: id,
-    color: selectedColor,
-    quantity: selectedQuantity,
-    other: [name, price, image.src, image.alt],
-  };
+totalQuantity += parseInt(itemToCart.quantity);
 
-  let isAlreadyInCart = false;
-  for (let cartItem of cartStorage) {
-    // Si id et couleur identique à élément déjà présent
-    if (cartItem.id == itemToCart.id && cartItem.color == itemToCart.color) {
-      // alors récupère l'ancienne quantité de l'élément qu'on converti en entier (était en texte, donc en string)
-      let oldQuantity = parseInt(cartItem.quantity);
-      // la nouvelle quantité = l'ancienne quantité + la quantité anciennement présente dans le panier (toujours converti en entier)
-      let newQuantity = oldQuantity + parseInt(itemToCart.quantity);
-      // la quantité anciennement présente dans le panier adopte la nouvelle quantité obtenue au dessus qu'on convertit en texte avec toString
-      cartItem.quantity = newQuantity.toString();
-      // Et du coup l'élément devient "déjà présent dans le cart"
-      isAlreadyInCart = true;
-    }
+let isAlreadyInCart = false;
+
+for (let cartItem of cartStorage) {
+  // Si id et couleur identique à élément déjà présent
+  if (cartItem.id == itemToCart.id && cartItem.color == itemToCart.color) {
+    // alors récupère l'ancienne quantité de l'élément qu'on converti en entier (était en texte, donc en string)
+    let oldQuantity = parseInt(cartItem.quantity);
+    // la nouvelle quantité = l'ancienne quantité + la quantité anciennement présente dans le panier (toujours converti en entier)
+    let newQuantity = oldQuantity + parseInt(itemToCart.quantity);
+    // la quantité anciennement présente dans le panier adopte la nouvelle quantité obtenue au dessus qu'on convertit en texte avec toString
+    cartItem.quantity = newQuantity.toString();
+    // Et du coup l'élément devient "déjà présent dans le cart"
+    isAlreadyInCart = true;
   }
+}
 
-  // Si isAlreadyInCart n'est pas en false, alors l'élément est ajouté directement dans le panier sans être impacté par la boucle (même s'il la passe quand même)
-  if (!isAlreadyInCart) {
-    cartStorage.push(itemToCart);
-  }
+// Si isAlreadyInCart n'est pas en false, alors l'élément est ajouté directement dans le panier sans être impacté par la boucle (même s'il la passe quand même)
+if (!isAlreadyInCart) {
+  cartStorage.push(itemToCart);
+}
 
-  localStorage.setItem("storage", JSON.stringify(cartStorage));
+localStorage.setItem("storage", JSON.stringify(cartStorage));
 
-  // Ajout d'un paragraphe qui confirme que le(s) produit(s) ont été ajoutés au panier après avoir cliqué sur le bouton "Ajouter au panier"
-  let addTextToButton = createElement("p", item__content, [
-    { name: "class", value: "addedToCart" },
-  ]);
-  addTextNode("Produit(s) ajouté(s) au panier.", addTextToButton);
-  addTextToButton.style.fontSize = "1.3em";
-  addTextToButton.style.textAlign = "center";
+// Ajout d'un paragraphe qui confirme que le(s) produit(s) ont été ajoutés au panier après avoir cliqué sur le bouton "Ajouter au panier"
+addTextNode(`${itemToCart.quantity} ${itemData.name} de couleur ${itemToCart.color} ajouté(s) au panier.`, h2Button);
+addTextNode(`Vous avez ajouté ${totalQuantity} ${itemData.name} dans le panier.`, pButton); 
 });
