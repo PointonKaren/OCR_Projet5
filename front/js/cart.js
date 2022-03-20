@@ -1,231 +1,292 @@
-// Récupération d'un tableau qui contiendra tous les éléments ayant pour class html .deleteItem
-let deleteButtonArray = document.getElementsByClassName("deleteItem");
+const urlAPI = "http://localhost:3000/api";
+const urlProducts = `${urlAPI}/products`;
+const section = document.getElementById("cart__items");
 
-// Récupération d'un tableau qui contiendra tous les éléments ayant pour class html .itemQuantity
+let totalQuantityElement = document.getElementById("totalQuantity");
+let totalPriceElement = document.getElementById("totalPrice");
+let deleteButtonArray = document.getElementsByClassName("deleteItem");
 let quantityInputArray = document.getElementsByClassName("itemQuantity");
 
-// Fonction générique qui crée un élément (ex : "div") dans son parent (ex : <article></article>) en lui conférant des attributs (ex : class = "nom_de_classe")
-let createElement = (element_type, element_parent, attributes) => {
-  let element = document.createElement(element_type);
-  for (let attribute of attributes) {
-    element.setAttribute(attribute.name, attribute.value);
-  }
-  element_parent.appendChild(element);
-  return element;
-};
 
-// Fonction générique qui crée un texte entre les balises de son élément parent (contenu d'une balise <p></p>, <h2></h2> etc) si celui-ci n'existe pas déjà,
-// sinon il remplace le texte déjà présent par le nouveau texte (pour éviter d'ajouter des textes en boucle...)
-let addTextNode = (text, element_parent) => {
-  try {
-    element_parent.childNodes[0].nodeValue = text;
-  } catch (error) {
-    const textNode = document.createTextNode(text);
-    element_parent.appendChild(textNode);
-  }
-};
+/**
+ * Fonction qui récupère les données depuis le localStorage
+ * @return {Array}
+ */
 
-// Création d'une fonction générique qui, pour n'importe quel élément d'une balise article, récupère les id et couleur de chaque item présent dans l'article
-const getArticleDataFromElement = (element) => {
-  // Pointe la balise "article" la plus proche de l'élément indiqué (= ancètre "le plus proche" de type article de cet élément)
-  let elementArticle = element.closest("article");
+ const getLocalStorage = () => {
+    let array;
+    if (localStorage.getItem("cart") == null) {
+        array = []
+    } else {
+        array = JSON.parse(localStorage.getItem("cart"));
+    }
+    return array
+ }
 
-  // Récupération des attributs data-id et data-color de la balise "article" pointée ci-avant
-  let dataId = elementArticle.getAttribute("data-id");
-  let dataColor = elementArticle.getAttribute("data-color");
+/**
+ * Fonction générique qui récupère les données "produits" de l'API
+ * @param {String} id
+ */
 
-  // Renvoi de l'objet contenant l'articlé pointé, la data-id et la data-color hors de cette fonction
-  return {
-    article: elementArticle,
-    id: dataId,
-    color: dataColor,
+ const requestAPIProducts = async (id="") => {
+    let url = "";
+    if (id==="") { 
+        url = urlProducts;
+    } else {
+        url = `${urlProducts}/${id}`
+    }
+    try {
+        let response = await fetch(url)
+        let data = await response.json()
+        return data
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+/** 
+ * Fonction générique qui crée un élément et ses attributs éventuels dans son parent
+ * @param {String} elementType
+ * @param {Element} elementParent
+ * @param {Array} attributes
+ * @param {String} textContent
+ */
+
+ const createElement = (elementType, elementParent, attributes=[], textContent="") => {
+    let element = document.createElement(elementType);
+    for (let attribute of attributes) {
+      element.setAttribute(attribute.name, attribute.value);
+    }
+    elementParent.appendChild(element);
+    element.textContent = textContent;
+    return element;
   };
-};
 
-// Création d'un fonction permettant de calculer la somme des qunatités et des prix de tous les items du cart
-const calculTotalQuantityAndPrice = () => {
-  // Création d'une variable pour calculer la quantité totale des items présents dans le panier :
-  let cartTotalQuantity = 0;
+/**
+ * Fonction qui récupère l'index d'un produit dans le localStorage
+ * @param {String} productId
+ * @param {String} productColor
+ * @return {Number}
+ */
 
-  // Création d'une variable pour calculer la somme à régler
-  let cartTotalPrice = 0;
-
-  // Pour chaque item contenu dans le panier :
-  for (let itemInCart of cart) {
-    // Ajout de la quantité de l'item à la quantité totale actuelle
-    cartTotalQuantity += parseInt(itemInCart.quantity);
-
-    // Ajout du prix multiplié par la quantité au prix total actuel
-    cartTotalPrice +=
-      parseInt(itemInCart.quantity) * parseInt(itemInCart.other[1]);
-  }
-
-  // Ajout du nombre total de canapés dans le panier :
-  addTextNode(cartTotalQuantity, document.getElementById("totalQuantity"));
-
-  // Ajout du prix total à payer :
-  addTextNode(cartTotalPrice, document.getElementById("totalPrice"));
-};
-
-let section = document.getElementById("cart__items");
-
-// Tableau du contenu du localStorage
-let cart = JSON.parse(localStorage.getItem("storage"));
-
-// Pour chaque item contenu dans le panier :
-for (let itemInCart of cart) {
-  // Récupération des données de l'item stockées dans le tableau "cart"
-  let id = itemInCart.id;
-  let color = itemInCart.color;
-  let quantity = itemInCart.quantity;
-  let name = itemInCart.other[0];
-  let price = itemInCart.other[1];
-  let imageSrc = itemInCart.other[2];
-  let imageAlt = itemInCart.other[3];
-  let imageTitle = itemInCart.other[3];
-
-  // Création du panier dynamique dans le fichier html, enfant de la section (variable créée ligne 34).
-  // NB : les mots précédés de $ correspondent aux variables créées ci-avant.
-  // <article class="cart__item" data-id="$id" data-color="$color">
-  let cartArticle = createElement("article", section, [
-    { name: "class", value: "cart__item" },
-    { name: "data-id", value: id },
-    { name: "data-color", value: color },
-  ]);
-
-  //<div class="cart__item__img"></div>, enfant de l'article cartArticle
-  let cartDivImg = createElement("div", cartArticle, [
-    { name: "class", value: "cart__item__img" },
-  ]);
-
-  // <img src="$imageSrc" alt="$imageAlt" title="$imageTitle"></img>, enfant de cartDivImg
-  createElement("img", cartDivImg, [
-    { name: "src", value: imageSrc },
-    { name: "alt", value: imageAlt },
-    { name: "title", value: imageTitle },
-  ]);
-
-  //  <div class="cart__item__content"></div>, enfant de l'article cartArticle
-  let cartDivItemContent = createElement("div", cartArticle, [
-    { name: "class", value: "cart__item__content" },
-  ]);
-
-  // <div class="cart__item__content__description"></div>, enfant de cartDivItemContent
-  let cartDivItemContentDescription = createElement("div", cartDivItemContent, [
-    { name: "class", value: "cart__item__content__description" },
-  ]);
-
-  // <h2>$name</h2>, enfant de cartDivItemContentDescription
-  let cartName = createElement("h2", cartDivItemContentDescription, []);
-  addTextNode(name, cartName);
-
-  // <p>$color</p>, enfant de cartDivItemContentDescription
-  let cartColor = createElement("p", cartDivItemContentDescription, []);
-  addTextNode(color, cartColor);
-
-  // <p>$price €</p>, enfant de cartDivItemContentDescription
-  let cartPrice = createElement("p", cartDivItemContentDescription, []);
-  addTextNode(price + " €", cartPrice);
-
-  //  <div class="cart__item__content__settings"></div>, enfant de cartDivItemContent
-  let cartDivItemContentSettings = createElement("div", cartDivItemContent, [
-    { name: "class", value: "cart__item__content__settings" },
-  ]);
-
-  //  <div class="cart__item__content__settings__quantity"></div>, enfant de cartDivItemContentSettings
-  let cartDivItemContentSettingsQuantity = createElement(
-    "div",
-    cartDivItemContentSettings,
-    [{ name: "class", value: "cart__item__content__settings__quantity" }]
-  );
-
-  //  <p>Qté : </p>, enfant de cartDivItemContentSettingsQuantity
-  let cartQuantity = createElement("p", cartDivItemContentSettingsQuantity, []);
-  addTextNode("Qté :", cartQuantity);
-
-  // <input type="number" class="itemQuantity" name="itemQuantity" min="1" max="100" value="$quantity">, enfant de cartDivItemContentSettingsQuantity
-  let cartItemsInput = createElement(
-    "input",
-    cartDivItemContentSettingsQuantity,
-    [
-      { name: "type", value: "number" },
-      { name: "class", value: "itemQuantity" },
-      { name: "name", value: "itemQuantity" },
-      { name: "min", value: "1" },
-      { name: "max", value: "100" },
-      { name: "value", value: quantity },
-    ]
-  );
-
-  // <div class="cart__item__content__settings__delete"></div>, enfant de cartDivItemContentSettings
-  let cartDivItemContentSettingsDelete = createElement(
-    "div",
-    cartDivItemContentSettings,
-    [{ name: "class", value: "cart__item__content__settings__delete" }]
-  );
-
-  // <p class="deleteItem">Supprimer</p>, enfant de cartDivItemContentSettingsDelete (= "bouton" qui servira à supprimer l'item du panier)
-  let cartDelete = createElement("p", cartDivItemContentSettingsDelete, [
-    { name: "class", value: "deleteItem" },
-  ]);
-  addTextNode("Supprimer", cartDelete);
-}
-
-// Rappel : "cart" = le panier virtuel, différent du panier visible à l'écran (dans balises <article>), qui correspond à la clé "storage" du localStorage
-
-// Boucle pour supprimer l'élément <article></article> ainsi que l'item dans le localStorage quand on clique sur "Supprimer"
-for (let deleteButton of deleteButtonArray) {
-  deleteButton.addEventListener("click", () => {
-    // Utilisation de ma fonction générique getArticleDataFromElement pour récupérer l'id et la color de l'item présent dans <article></article>
-    let dataArticle = getArticleDataFromElement(deleteButton);
-
-    // Pour chaque index du tableau cart,
-    for (let i in cart) {
-      // Si id et color de dataArticle = un item présent dans le localStorage avec ces datas
-      if (cart[i].id == dataArticle.id && cart[i].color == dataArticle.color) {
-        // => supprimer <article></article> et l'item du cart
-        deletedItem = cart.splice(i, 1);
-        dataArticle.article.remove();
-      }
-    }
-
-    // Mise à jour des totaux "quantités" et "prix" après avoir supprimé un item
-    calculTotalQuantityAndPrice();
-
-    // MAJ dans le localStorage de la clé storage qui = cart
-    localStorage.setItem("storage", JSON.stringify(cart));
-  });
-}
-
-// Boucle pour modifier le contenu du localStorage si l'input "Qté" est modifié par le client
-for (let quantityInput of quantityInputArray) {
-  // Fonction qui dit que pour chanque quantité, récupérer les données de l'input "Qté" présentes dans le tableau
-  // et modifier la quantité d'items du localStorage pour l'item dont l'id et la couleur de l'item présent dans l'article correspondent à l'item équivalent dans le localStorage
-  quantityInput.addEventListener("change", () => {
-    // Utilisation de ma fonction générique getArticleDataFromElement pour récupérer l'id et la color de chaque
-    let dataArticle = getArticleDataFromElement(quantityInput);
-
-    // Pour chaque index du tableau cart,
-    for (let i in cart) {
-      // Si id et color de dataArticle = un item présent dans le cart avec ces datas
-      if (cart[i].id == dataArticle.id && cart[i].color == dataArticle.color) {
-        // SUPPRIMER CE IF DU FICHIER DE LA SOUTENANCE, VERIFIE QUE CA FONCTIONNE !
-        if (quantityInput.valueAsNumber > parseInt(cart[i].quantity)) {
-          console.log("Item ajouté.");
-        } else {
-          console.log("Item retiré");
+ const getProductIndex = (productId, productColor) => {
+    let localCart = getLocalStorage()
+    for (let index in localCart) {
+        if (localCart[index].id == productId && localCart[index].color == productColor) {
+            return index
         }
-        // Mise à jour de la quantité du cart en fonction de ce qui se trouve dans l'input
-        cart[i].quantity = quantityInput.value;
-      }
     }
+    return -1 
+ }
+ 
+/**
+ * Fonction permettant de trier les données du tableau par leurs id
+ * @param {Array} array 
+ */
 
-    // Mise à jour des totaux "quantités" et "prix" après avoir modifier la quantité d'un item
-    calculTotalQuantityAndPrice();
-
-    // MAJ dans le localStorage de la clé storage qui = cart
-    localStorage.setItem("storage", JSON.stringify(cart));
-  });
+const sortArrayById = (array) => {
+    let sortedArray = array.sort((a, b) => {
+        return a.id.localeCompare(b.id);
+    });
+    return sortedArray;
 }
 
-calculTotalQuantityAndPrice();
+/**
+ *  Fonction générique qui, pour n'importe quel élément d'une balise article, récupère les id et couleur de chaque item présent dans l'article
+ * @param {Element} element 
+ * @return {Object}
+ */
+
+ const getArticleDataFromElement = (element) => {
+    // Pointe la balise "article" la plus proche de l'élément indiqué (= ancètre "le plus proche" de type article de cet élément)
+    let elementArticle = element.closest("article");
+
+    // Récupération des attributs data-id et data-color de la balise "article" pointée ci-avant
+    let dataId = elementArticle.getAttribute("data-id");
+    let dataColor = elementArticle.getAttribute("data-color");
+
+    // Renvoi de l'objet contenant l'articlé pointé, la data-id et la data-color hors de cette fonction
+    return {
+        article: elementArticle,
+        id: dataId,
+        color: dataColor,
+    };
+ };
+  
+/**
+ * Fonction générique qui modifie la quantité d'un produit dans le localStorage
+ * @param {Element} quantityInput
+ */
+
+ const modifyProductQuantitytInCart = (quantityInput) => {
+    let localCart = getLocalStorage()
+    let dataArticle = getArticleDataFromElement(quantityInput);
+    let productId = dataArticle.id
+    let productColor = dataArticle.color    
+    let selectedIndex = getProductIndex(productId, productColor)
+    localCart[selectedIndex].quantity = parseInt(quantityInput.value)
+    localStorage.setItem("cart", JSON.stringify(localCart));
+    calcTotalQuantityAndPrice()
+}
+
+/**
+ * Fonction générique qui supprime un produit dans le localStorage et de la page
+ * @param {Element} deleteButton
+ */
+
+ const deleteProductInCart = (deleteButton) => {
+    let localCart = getLocalStorage()
+    let dataArticle = getArticleDataFromElement(deleteButton);
+    let productId = dataArticle.id
+    let productColor = dataArticle.color    
+    let selectedIndex = getProductIndex(productId, productColor)
+    if (selectedIndex != -1) {
+        localCart.splice(selectedIndex, 1)
+        localStorage.setItem("cart", JSON.stringify(localCart));
+        dataArticle.article.remove();
+    }
+    calcTotalQuantityAndPrice()
+}
+
+/**
+ * Fonction qui permet de calculer le nombre total de produits dans le panier ainsi que le prix total du panier
+ */
+
+const calcTotalQuantityAndPrice = async () => {
+    let localCart = getLocalStorage()
+    let totalQuantity = 0
+    let totalPrice = 0
+    for (let product of localCart) {
+        let productQuantity = product.quantity
+        let productId = product.id
+        let productDataAPI = await requestAPIProducts(productId)
+        let productPrice = productDataAPI.price
+        totalQuantity = totalQuantity + parseInt(productQuantity)
+        totalPrice = totalPrice + parseInt(productPrice) * parseInt(productQuantity)
+    }
+    totalQuantityElement.textContent = totalQuantity
+    totalPriceElement.textContent = totalPrice
+}
+
+/**
+ * Fonction principale qui affiche le panier à partir des produits contenus dans le localStorage et des données de l'API 
+ */
+
+const displayCartProducts = async () => {
+    let localCart = sortArrayById(getLocalStorage())
+    for (let product of localCart) {
+        let productId = product.id
+        let productColor = product.color
+        let productQuantity = product.quantity
+        let productDataAPI = await requestAPIProducts(productId)
+        let productPrice = productDataAPI.price
+        let productName = productDataAPI.name
+        let productImgUrl = productDataAPI.imageUrl
+        let productAltText = productDataAPI.altTxt
+        
+        // Création du panier dynamique dans le fichier html, enfant de la section.
+        // NB : les mots précédés de $ correspondent aux variables créées ci-avant.
+        // <article class="cart__item" data-id="$id" data-color="$color">
+        let cartArticle = createElement("article", section, [
+            { name: "class", value: "cart__item" },
+            { name: "data-id", value: productId },
+            { name: "data-color", value: productColor },
+        ]);
+        
+        //<div class="cart__item__img"></div>, enfant de l'article cartArticle
+        let cartDivImg = createElement("div", cartArticle, [
+            { name: "class", value: "cart__item__img" },
+        ]);
+        
+        // <img src="$imageSrc" alt="$imageAlt" title="$imageTitle"></img>, enfant de cartDivImg
+        createElement("img", cartDivImg, [
+            { name: "src", value: productImgUrl },
+            { name: "alt", value: productAltText },
+            { name: "title", value: productAltText },
+        ]);
+        
+        //  <div class="cart__item__content"></div>, enfant de l'article cartArticle
+        let cartDivItemContent = createElement("div", cartArticle, [
+            { name: "class", value: "cart__item__content" },
+        ]);
+        
+        // <div class="cart__item__content__description"></div>, enfant de cartDivItemContent
+        let cartDivItemContentDescription = createElement("div", cartDivItemContent, [
+            { name: "class", value: "cart__item__content__description" },
+        ]);
+        
+        // <h2>$name</h2>, enfant de cartDivItemContentDescription
+        createElement("h2", cartDivItemContentDescription, [], productName);
+        
+        // <p>$color</p>, enfant de cartDivItemContentDescription
+        createElement("p", cartDivItemContentDescription, [], productColor);
+        
+        // <p>$price €</p>, enfant de cartDivItemContentDescription
+        createElement("p", cartDivItemContentDescription, [], `${productPrice} €`);
+        
+        //  <div class="cart__item__content__settings"></div>, enfant de cartDivItemContent
+        let cartDivItemContentSettings = createElement("div", cartDivItemContent, [
+            { name: "class", value: "cart__item__content__settings" },
+        ]);
+        
+        //  <div class="cart__item__content__settings__quantity"></div>, enfant de cartDivItemContentSettings
+        let cartDivItemContentSettingsQuantity = createElement(
+            "div",
+            cartDivItemContentSettings,
+            [{ name: "class", value: "cart__item__content__settings__quantity" }]
+        );
+        
+        //  <p>Qté : </p>, enfant de cartDivItemContentSettingsQuantity
+        createElement("p", cartDivItemContentSettingsQuantity, [], "Qté :");
+        
+        // <input type="number" class="itemQuantity" name="itemQuantity" min="1" max="100" value="$quantity">, enfant de cartDivItemContentSettingsQuantity
+        createElement(
+            "input",
+            cartDivItemContentSettingsQuantity,
+            [
+            { name: "type", value: "number" },
+            { name: "class", value: "itemQuantity" },
+            { name: "name", value: "itemQuantity" },
+            { name: "min", value: "1" },
+            { name: "max", value: "100" },
+            { name: "value", value: productQuantity},
+            ]
+        );
+        
+        // <div class="cart__item__content__settings__delete"></div>, enfant de cartDivItemContentSettings
+        let cartDivItemContentSettingsDelete = createElement(
+            "div",
+            cartDivItemContentSettings,
+            [{ name: "class", value: "cart__item__content__settings__delete" }]
+        );
+        
+        // <p class="deleteItem">Supprimer</p>, enfant de cartDivItemContentSettingsDelete (= "bouton" qui servira à supprimer l'item du panier)
+        createElement("p", cartDivItemContentSettingsDelete, [
+            { name: "class", value: "deleteItem" },
+        ], "Supprimer");        
+        }
+        calcTotalQuantityAndPrice()
+    }
+
+/**
+ * Fonction qui ajoute des event listeners sur les boutons supprimer et inputs "Qté"
+ */
+const addEventListeners = () => {
+    for (let deleteButton of  deleteButtonArray) { 
+    
+        deleteButton.addEventListener("click", () => {
+            deleteProductInCart(deleteButton)
+        })
+    }
+    for (let quantityInput of quantityInputArray) {
+        quantityInput.addEventListener("change", () => {
+            modifyProductQuantitytInCart(quantityInput)
+        })
+    }
+}
+displayCartProducts()
+
+setTimeout(()=>{
+    addEventListeners();
+  }, 1000)
+//   window.onload = addEventListeners()
