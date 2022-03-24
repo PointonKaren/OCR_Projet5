@@ -172,6 +172,9 @@ const displayInformUser = (productQuantity, productName, productColor) => {
 
 displayProductInfo();
 
+/**
+ * Gestion des produits dans le panier et le localStorage au clic
+ */
 addToCartButton.addEventListener("click", () => {
   const selectedColor = document.getElementById("colors").value;
   const selectedQuantity = document.getElementById("quantity").value;
