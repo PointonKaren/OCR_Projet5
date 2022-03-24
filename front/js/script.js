@@ -1,12 +1,10 @@
-const urlAPI = "http://localhost:3000/api";
-const urlProducts = `${urlAPI}/products`;
+const urlProducts = "http://localhost:3000/api/products";
 const idItems = document.getElementById("items");
 
 /**
- * Fonction générique qui récupère les données "produits" de l'API
+ * Fonction générique de type asynchrone qui récupère les données "produits" de l'API
  * @param {String} id
  */
-
 const requestAPIProducts = async (id = "") => {
   let url = "";
   if (id === "") {
@@ -30,7 +28,6 @@ const requestAPIProducts = async (id = "") => {
  * @param {Array} attributes
  * @param {String} textContent
  */
-
 const createElement = (
   elementType,
   elementParent,
@@ -49,7 +46,6 @@ const createElement = (
 /**
  * Fonction principale qui permet de générer dynamiquement la page d'accueil depuis les données de l'API
  */
-
 const displayProducts = async () => {
   let products = await requestAPIProducts();
 
@@ -70,7 +66,7 @@ const displayProducts = async () => {
     ]);
 
     // Ajout de <h3 class="productName">Nom du produit</h3> en tant qu'enfant de <article></article> :
-    let productName = createElement(
+    createElement(
       "h3",
       productArticle,
       [{ name: "class", value: "productName" }],
@@ -78,7 +74,7 @@ const displayProducts = async () => {
     );
 
     // Ajout de <p class="productDescription">Description du produit</p> en tant qu'enfant de <article></article> :
-    let productDescription = createElement(
+    createElement(
       "p",
       productArticle,
       [{ name: "class", value: "productDescription" }],
